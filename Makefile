@@ -1,4 +1,4 @@
-.PHONY: run test lint build build-dev build-release clean
+.PHONY: run test lint build build-dev build-release clean run-auto
 
 # Pythonのライブラリパスを設定
 PYTHON_ROOT := $(shell python3-config --prefix)
@@ -35,11 +35,14 @@ build: build-release
 run: build
 	poetry run python -m agent.run
 
+run-auto: build
+	AUTO=1 poetry run python -m agent.run
+
 test: build
 	cargo test --quiet
 	poetry run pytest -q
 
 lint:
 	cargo fmt
-	poetry run ruff check .
+	poetry run ruff check . --fix
 	poetry run mypy -p agent

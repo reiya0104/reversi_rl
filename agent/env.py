@@ -1,12 +1,12 @@
 import random
+import tkinter as tk
+from tkinter import Canvas
 from typing import Any
 
 import gymnasium as gym
 import numpy as np
-import tkinter as tk
-from tkinter import Canvas
-
 from reversi_rl import Board
+
 
 class ReversiEnv(gym.Env):
     """Gymnasium environment for Reversi with an optional Tkinter GUI.
@@ -23,10 +23,13 @@ class ReversiEnv(gym.Env):
         self.rng = random.Random(seed)
         self.board = Board()
         self.action_space = gym.spaces.Discrete(64 + 1)  # 64 squares + pass
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(65,), dtype=np.int8)
+        self.observation_space = gym.spaces.Box(
+            low=-1, high=1, shape=(65,), dtype=np.int8
+        )
 
         # GUI elements (created on demand)
         self._tk: tk.Tk | None = None
+        self._root: tk.Tk | None = None
         self._canvas: Canvas | None = None
         self._cell_size: int = 60
         self._terminated: bool = False
@@ -46,15 +49,25 @@ class ReversiEnv(gym.Env):
         legal = self.board.legal_moves()
         reward: int = 0
         self._terminated = False
+
+        # 現在のプレイヤーの手
         if action != 64 and action in legal:
             self.board.play(action)
-        # random opponent
-        opp_moves = self.board.legal_moves()
-        if opp_moves:
-            self.board.play(self.rng.choice(opp_moves))
         else:
-            # both players passed
+            # パス
+            pass
+
+        # 盤面が埋まっているかチェック
+        if all(cell != 0 for cell in self.board.as_list()):
             self._terminated = True
+        else:
+            # 相手の手
+            opp_moves = self.board.legal_moves()
+            if opp_moves:
+                self.board.play(self.rng.choice(opp_moves))
+            else:
+                # 相手もパス
+                self._terminated = True
 
         obs = np.array(
             self.board.as_list() + [1 if self.board.get_black_to_move() else -1],
@@ -72,9 +85,12 @@ class ReversiEnv(gym.Env):
         if self._tk is not None:
             return
         self._tk = tk.Tk()
+        self._root = self._tk
         self._tk.title("Reversi RL")
         px = self._cell_size * 8
-        self._canvas = Canvas(self._tk, width=px, height=px, bg="#388e3c", highlightthickness=0)
+        self._canvas = Canvas(
+            self._tk, width=px, height=px, bg="#388e3c", highlightthickness=0
+        )
         self._canvas.pack()
         self._draw_grid()
         self._canvas.bind("<Button-1>", self._on_click)
@@ -107,7 +123,14 @@ class ReversiEnv(gym.Env):
             r, c = divmod(idx, 8)
             x = c * size + size / 2
             y = r * size + size / 2
-            self._canvas.create_text(x, y, text="·", fill="yellow", font=("Helvetica", size // 2), tags="stone")
+            self._canvas.create_text(
+                x,
+                y,
+                text="·",
+                fill="yellow",
+                font=("Helvetica", size // 2),
+                tags="stone",
+            )
         if self._tk is not None:
             self._tk.update_idletasks()
             self._tk.update()
@@ -120,7 +143,12 @@ class ReversiEnv(gym.Env):
         row = int(event.y // size)
         if 0 <= row < 8 and 0 <= col < 8:
             idx = row * 8 + col
-            self.step(idx)  # ignore returned values; GUI refresh happens inside
+            if idx in self.board.legal_moves():
+                _, _, self._terminated, _, _ = self.step(
+                    idx
+                )  # GUI refresh happens inside
+            else:
+                print("Illegal move!")
 
     # ------------------------------ API ------------------------------
     def render(self):  # type: ignore[override]
@@ -131,3 +159,9 @@ class ReversiEnv(gym.Env):
         """
         self._ensure_gui()
         self._draw_board()
+
+    def update_gui(self) -> None:
+        """GUIを更新する"""
+        if self._tk is not None:
+            self._tk.update_idletasks()
+            self._tk.update()
