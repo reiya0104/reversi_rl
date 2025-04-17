@@ -47,6 +47,8 @@ class ManualPlayer:
         """クリックイベントで設定されたアクションを返す"""
         print("Waiting for click...")
         while self._action is None:
+            if env._terminated:  # ゲーム終了時はループを抜ける
+                return 64  # パスを返して終了
             env.update_gui()  # GUIの更新
             time.sleep(0.1)
         action = self._action
@@ -73,6 +75,10 @@ def play_game(env: ReversiEnv, player: Player) -> None:
 
         # 現在のプレイヤーの手を選ぶ
         action = player.get_action(env)
+        if env._terminated and isinstance(
+            player, ManualPlayer
+        ):  # 手動プレイ時の終了判定
+            break
         print(
             f"Step {step_count}: {'Auto' if isinstance(player, AutoPlayer) else 'Manual'} player action: {action}"
         )
@@ -81,10 +87,32 @@ def play_game(env: ReversiEnv, player: Player) -> None:
 
     env.render()
     black, white = env.board.counts()
-    reward = 1 if black > white else -1 if black < white else 0
     print(f"\nGame finished in {step_count} steps")
     print(f"Final score: Black {black} - White {white}")
-    print(f"Reward: {reward}")
+
+    # 勝敗の結果を表示
+    if black > white:
+        print("You win! 🎉")
+    elif black < white:
+        print("You lose... 😢")
+    else:
+        print("It's a draw! 🤝")
+
+    # ゲーム終了後、3秒待機して終了
+    print("\nWaiting 3 seconds...")
+    for i in range(3):
+        print(f"{3 - i}...")
+        time.sleep(1)
+        env.update_gui()  # GUIの更新を維持
+
+    # GUIの終了処理
+    if env._canvas is not None:
+        if env._tk is not None:
+            env._tk.quit()
+            env._tk.destroy()
+            env._tk = None
+            env._canvas = None
+            env._pass_button = None
 
 
 def setup_manual_player(env: ReversiEnv, player: ManualPlayer) -> None:
@@ -113,10 +141,11 @@ def setup_manual_player(env: ReversiEnv, player: ManualPlayer) -> None:
 
 
 if __name__ == "__main__":
-    env = ReversiEnv()
     if os.getenv("AUTO") == "1":
+        env = ReversiEnv()
         play_game(env, AutoPlayer())
     else:
+        env = ReversiEnv(manual_mode=True)  # 手動モード設定
         player = ManualPlayer()
         # 最初のrender()を呼び出してGUIを初期化
         env.render()

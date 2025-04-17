@@ -145,6 +145,11 @@ impl Board {
     pub fn as_list(&self) -> Vec<i8> {
         self.cells.to_vec()
     }
+
+    /// Pass the turn
+    pub fn pass_turn(&mut self) {
+        self.black_to_move = !self.black_to_move;
+    }
 }
 
 #[pymodule]
