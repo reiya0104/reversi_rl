@@ -1,0 +1,16 @@
+[package]
+name = "reversi_rl"
+version = "0.1.0"
+edition = "2021"
+description = "Reversi core with PyO3 bindings for RL env"
+license = "MIT"
+
+[lib]
+name = "reversi_rl"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21", features = ["extension-module"] }
+
+[build-dependencies]
+pyo3-build-config = "0.21"
