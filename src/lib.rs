@@ -10,7 +10,7 @@ pub struct Board {
 
 #[pymethods]
 impl Board {
-    /// Create the initial Othello position.
+    /// Create the initial reversi position.
     #[new]
     pub fn new() -> Self {
         let mut cells = [0i8; 64];

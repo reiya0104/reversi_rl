@@ -1,6 +1,6 @@
 # Reversi RL
 
-Base project for experimenting with reinforcement‑learning on the game **Reversi / Othello**.
+Base project for experimenting with reinforcement‑learning on the game **Reversi**.
 
 * Rust core (`src/lib.rs`) — fast board logic exposed to Python via PyO3.
 * Gymnasium environment (`agent/env.py`) — compatible with popular RL libraries.
